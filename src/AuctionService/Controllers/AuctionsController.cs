@@ -2,8 +2,10 @@ using AuctionService.Data;
 using AuctionService.DTOs;
 using AuctionService.Entities;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace AuctionService.Controllers;
 
@@ -15,12 +17,27 @@ public class AuctionsController(AuctionDbContext context, IMapper mapper) : Cont
     private readonly IMapper _mapper = mapper;
 
     [HttpGet]
-    public async Task<ActionResult<List<AuctionDto>>> GetAllAuctions()
+    public async Task<ActionResult<List<AuctionDto>>> GetAllAuctions(string date)
     {
-        var auctions = await _context.Auctions.Include(a => a.Item)
-            .OrderBy(a => a.Item.Make)
+        var query = _context.Auctions.OrderBy(q => q.Item.Make)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(date))
+        {
+            if (!DateTime.TryParse(
+                    date,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out var parsedDate))
+            {
+                return BadRequest("Invalid 'date' format. Please use ISO 8601 format, e.g. 2026-04-16T04:13:30Z");
+            }
+
+            query = query.Where(q => q.UpdatedAt > parsedDate);
+        }
+
+        return await query.ProjectTo<AuctionDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
-        return _mapper.Map<List<AuctionDto>>(auctions);
     }
 
     [HttpGet("{id:guid}")]
