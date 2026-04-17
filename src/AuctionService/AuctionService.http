@@ -1,0 +1,100 @@
+### Base URL
+@baseUrl = http://localhost:7001
+@auctionId = {{createAuction.response.body.id}}
+
+### ==========================================
+### GET ALL AUCTIONS
+### ==========================================
+# @name getAllAuctions
+GET {{baseUrl}}/api/auctions
+Accept: application/json
+
+### ==========================================
+### GET AUCTION BY ID
+### ==========================================
+# @name getAuctionById
+GET {{baseUrl}}/api/auctions/{{auctionId}}
+Accept: application/json
+
+### ==========================================
+### CREATE AUCTION
+### ==========================================
+# @name createAuction
+POST {{baseUrl}}/api/auctions
+Content-Type: application/json
+
+{
+  "make": "Ford",
+  "model": "GT",
+  "year": 2020,
+  "color": "White",
+  "mileage": 50000,
+  "imageUrl": "https://cdn.pixabay.com/photo/2016/05/06/16/32/car-1376190_960_720.jpg",
+  "reservePrice": 20000,
+  "auctionEnd": "2025-01-15T00:00:00"
+}
+
+### ==========================================
+### CREATE AUCTION - MISSING REQUIRED FIELD (test validation)
+### ==========================================
+# Expect: 400 Bad Request - Color is required
+POST {{baseUrl}}/api/auctions
+Content-Type: application/json
+
+{
+  "make": "Tesla",
+  "model": "Model S",
+  "year": 2022,
+  "mileage": 10000,
+  "imageUrl": "https://cdn.pixabay.com/photo/2016/05/06/16/32/car-1376190_960_720.jpg",
+  "reservePrice": 50000,
+  "auctionEnd": "2025-06-01T00:00:00"
+}
+
+### ==========================================
+### UPDATE AUCTION - Full update
+### ==========================================
+# @name updateAuction
+PUT {{baseUrl}}/api/auctions/{{auctionId}}
+Content-Type: application/json
+
+{
+  "make": "Ford Updated",
+  "model": "GT Sport",
+  "color": "Black",
+  "year": 2021,
+  "mileage": 45000
+}
+
+### ==========================================
+### UPDATE AUCTION - Partial update (chỉ update Make)
+### ==========================================
+PUT {{baseUrl}}/api/auctions/{{auctionId}}
+Content-Type: application/json
+
+{
+  "make": "Ford Partial Update"
+}
+
+### ==========================================
+### UPDATE AUCTION - Not found
+### ==========================================
+# Expect: 404 Not Found
+PUT {{baseUrl}}/api/auctions/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+  "make": "Ghost Car"
+}
+
+### ==========================================
+### DELETE AUCTION
+### ==========================================
+# @name deleteAuction
+DELETE {{baseUrl}}/api/auctions/{{auctionId}}
+
+### ==========================================
+### DELETE AUCTION - Not found
+### ==========================================
+# Expect: 404 Not Found
+DELETE {{baseUrl}}/api/auctions/00000000-0000-0000-0000-000000000000
