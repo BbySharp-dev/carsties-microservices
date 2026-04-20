@@ -8,11 +8,16 @@ services:
     volumes:
       - /var/lib/postgresql/data
   mongodb:
-      image: mongo
-      environment:
+    image: mongo
+    environment:
         - MONGO_INITDB_ROOT_USERNAME=root
         - MONGO_INITDB_ROOT_PASSWORD=mongopw
-      ports:
+    ports:
         - 27017:27017
-      volumes:
+    volumes:
         - /var/lib/mongodb/data
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672

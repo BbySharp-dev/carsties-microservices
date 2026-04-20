@@ -6,9 +6,6 @@ namespace SearchService.Services;
 
 public class AuctionSvcHttpClient(HttpClient httpClient, IConfiguration config)
 {
-    private readonly IConfiguration _config = config;
-    private readonly HttpClient _httpClient = httpClient;
-
     // public async Task<List<Item>> GetItemsForSearchDb()
     // {
     //     var lastUpdated = await DB.Find<Item, string>()
@@ -16,7 +13,7 @@ public class AuctionSvcHttpClient(HttpClient httpClient, IConfiguration config)
     //         .Project(p => p.UpdatedAt.ToString(CultureInfo.InvariantCulture))
     //         .ExecuteFirstAsync();
     //
-    //     return await _httpClient.GetFromJsonAsync<List<Item>>(_config["AuctionServiceUrl"] + "/api/auctions?date=" +
+    //     return await httpClient.GetFromJsonAsync<List<Item>>(config["AuctionServiceUrl"] + "/api/auctions?date=" +
     //                                                           lastUpdated);
     // }
 
@@ -29,7 +26,7 @@ public class AuctionSvcHttpClient(HttpClient httpClient, IConfiguration config)
 
         var lastUpdated = lastUpdatedDate.ToString(CultureInfo.InvariantCulture);
 
-        return await _httpClient.GetFromJsonAsync<List<Item>>(_config["AuctionServiceUrl"] + "/api/auctions?date=" +
-                                                              lastUpdated);
+        return await httpClient.GetFromJsonAsync<List<Item>>(config["AuctionServiceUrl"] + "/api/auctions?date=" +
+                                                             lastUpdated);
     }
 }
