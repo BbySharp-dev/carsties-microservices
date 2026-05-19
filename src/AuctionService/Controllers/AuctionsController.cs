@@ -6,6 +6,7 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Contracts;
 using MassTransit;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,7 +33,8 @@ public class AuctionsController(
                     CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
                     out var parsedDate))
-                return BadRequest("Invalid 'date' format. Please use ISO 8601 format, e.g. 2026-04-16T04:13:30Z");
+                return BadRequest(
+                    "Invalid 'date' format. Please use ISO 8601 format, e.g. 2026-04-16T04:13:30Z");
 
             query = query.Where(q => q.UpdatedAt > parsedDate);
         }
@@ -50,11 +52,14 @@ public class AuctionsController(
         return mapper.Map<AuctionDto>(auctions);
     }
 
+    [Authorize]
     [HttpPost]
-    public async Task<ActionResult<AuctionDto>> CreateAuction(CreateAuctionDto createAuctionDto)
+    public async Task<ActionResult<AuctionDto>> CreateAuction(
+        CreateAuctionDto createAuctionDto)
     {
         var auction = mapper.Map<Auction>(createAuctionDto);
-        auction.Seller = "test";
+
+        auction.Seller = User.Identity.Name;
 
         context.Auctions.Add(auction);
 
@@ -65,17 +70,20 @@ public class AuctionsController(
         var result = await context.SaveChangesAsync() > 0;
 
         if (!result) return BadRequest("Could not save changes to the DB");
-        return CreatedAtAction(nameof(GetAuctionById), new { auction.Id }, mapper.Map<AuctionDto>(auction));
+        return CreatedAtAction(nameof(GetAuctionById), new { auction.Id },
+            mapper.Map<AuctionDto>(auction));
     }
 
+    [Authorize]
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult> UpdateAuction(Guid id, UpdateAuctionDto updateAuctionDto)
+    public async Task<ActionResult> UpdateAuction(Guid id,
+        UpdateAuctionDto updateAuctionDto)
     {
         var auction = await context.Auctions.Include(a => a.Item)
             .FirstOrDefaultAsync(a => a.Id == id);
         if (auction == null) return NotFound();
 
-        // TODO: check seller == username
+        if (auction.Seller != User.Identity.Name) return Forbid();
 
         auction.Item.Make = updateAuctionDto.Make ?? auction.Item.Make;
         auction.Item.Model = updateAuctionDto.Model ?? auction.Item.Model;
@@ -91,13 +99,15 @@ public class AuctionsController(
         return Ok("");
     }
 
+    [Authorize]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> DeleteAuction(Guid id)
     {
         var auction = await context.Auctions.FindAsync(id);
         if (auction == null) return NotFound();
 
-        //TODO: Check seller == username
+        if (auction.Seller != User.Identity.Name) return Forbid();
+
         context.Auctions.Remove(auction);
         await publishEndpoint.Publish(new AuctionDeleted { Id = auction.Id.ToString() });
         var result = await context.SaveChangesAsync() > 0;
